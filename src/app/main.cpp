@@ -9,7 +9,7 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include "config.h"
-#include "../texteditor/mainwindow.h"
+#include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -23,8 +23,11 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    QApplication::setApplicationName("Hello Qt");
+    // Set application metadata
+    QApplication::setApplicationName("hello");
+    QApplication::setApplicationDisplayName("Hello Qt");
     QApplication::setApplicationVersion(HELLO_VERSION);
+    QApplication::setOrganizationDomain("io.github.liudng.hello");
     QApplication::setDesktopFileName("io.github.liudng.hello");
     QApplication::setStyle("fusion");
     QIcon::setThemeName("gnome");
@@ -38,7 +41,8 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     parser.process(app);
 
-    hello::texteditor::MainWindow mainWindow;
+    // Create and show the main window
+    hello::app::MainWindow mainWindow;
     mainWindow.show();
 
     // Start the event loop

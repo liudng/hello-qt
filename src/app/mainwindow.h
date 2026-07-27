@@ -7,13 +7,16 @@
 #include <QString>
 #include <QCloseEvent>
 
-namespace hello::texteditor {
+namespace hello::app {
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
     MainWindow(QWidget *parent = nullptr);
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private:
     void createActions();
@@ -35,9 +38,6 @@ private slots:
     bool saveAs();
     void about();
     void updateStatusBar();
-
-protected:
-    void closeEvent(QCloseEvent *event) override;
 };
 
-}
+} // namespace hello

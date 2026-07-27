@@ -20,10 +20,10 @@ configure_file(
 qt_add_executable(
     hello
     main.cpp
+    mainwindow.cpp
 )
 
 target_link_libraries(hello PRIVATE
-    texteditor
     core
     Qt6::Widgets
 )

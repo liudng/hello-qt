@@ -22,7 +22,11 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
+find_package(Qt6 REQUIRED COMPONENTS 
+Svg
+Widgets 
+)
+
 qt_standard_project_setup(
     REQUIRES 6.8
     I18N_SOURCE_LANGUAGE en
@@ -31,5 +35,4 @@ qt_standard_project_setup(
 
 add_subdirectory(src/app)
 add_subdirectory(src/core)
-add_subdirectory(src/filebrowser)
-add_subdirectory(src/texteditor)
+add_subdirectory(tests/unit)

@@ -10,7 +10,7 @@
 
 ### QLockFile
 
-### QCommandLineParser & QCommandLineOption
+### QCommandLineParser
 
 ### QMainWindow
 
