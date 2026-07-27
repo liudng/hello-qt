@@ -4,18 +4,44 @@
 
 [Model/View Programming](https://doc.qt.io/qt-6.8/model-view-programming.html)
 
+## Qt Widgets
+
+[Qt Widgets](https://doc.qt.io/qt-6.8/qtwidgets-index.html)
+
+### QLockFile
+
+### QCommandLineParser & QCommandLineOption
+
+### QMainWindow
+
+### i18n
+
+### QAction
+
+### Settings.ini
+
 ## CMake
 
 [Getting started with CMake](https://doc.qt.io/qt-6.8/cmake-get-started.html)
+[CMake Commands in Qt6 Core](https://doc.qt.io/qt-6.8/cmake-commands-qtcore.html)
 
 ## clang-format
 
-```shell
-clang-format -style=WebKit -dump-config > .clang-format
-clang-format -i -style=WebKit src/*.cpp src/*.h
+[Qt Coding Style](https://wiki.qt.io/Qt_Coding_Style)
+[clang-format Configuration](https://code.qt.io/cgit/qt/qt5.git/tree/_clang-format?h=6.8)
+
+### vscode settings.json
+
+```json
+{
+    "editor.formatOnSave": true,
+    "C_Cpp.clang_format_style": "file"
+}
 ```
 
-[Qt Coding Style](https://wiki.qt.io/Qt_Coding_Style)
+## Clazy
+
+
 
 ## clang-tidy
 
