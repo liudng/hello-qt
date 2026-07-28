@@ -9,116 +9,130 @@
 #include <QLabel>
 #include <QSettings>
 #include <QPushButton>
+#include <QSplitter>
+#include <QTreeWidget>
+#include <QAbstractButton>
+#include <QShowEvent>
 
 #include "preferencesdialog.h"
 
 namespace hello::app {
 
-PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent)
+PreferencesDialog::PreferencesDialog(QWidget *parent) : QDialog(parent), m_loaded(false)
 {
     setWindowTitle(tr("Preferences"));
     setModal(true);
+    setMinimumSize(600, 400);
 
-    // 创建垂直布局，作为 this 的唯一布局
-    QVBoxLayout *outerLayout = new QVBoxLayout(this);
-    // 创建水平布局（不设置父）
-    QHBoxLayout *mainLayout = new QHBoxLayout();
-    // 水平布局作为子布局
-    outerLayout->addLayout(mainLayout);
+    // 1. 创建左侧分类树
+    m_categoryTree = new QTreeWidget(this);
+    m_categoryTree->setHeaderHidden(true); // 隐藏表头
+    m_categoryTree->setRootIsDecorated(false); // 不显示展开/折叠的小箭头
 
-    // 左侧分类列表
-    m_categoryList = new QListWidget(this);
-    m_categoryList->setFixedWidth(120);
-    m_categoryList->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-    connect(m_categoryList, &QListWidget::currentRowChanged, this,
-            &PreferencesDialog::onCategoryChanged);
-    mainLayout->addWidget(m_categoryList);
+    // 2. 创建右侧页面堆栈
+    m_pageStack = new QStackedWidget(this);
+    // 添加一个空白的占位页面，防止一开始没有任何页面时报错
+    m_pageStack->addWidget(new QWidget());
 
-    // 右侧堆叠窗口
-    m_stackedWidget = new QStackedWidget(this);
-    mainLayout->addWidget(m_stackedWidget, 1); // 占用剩余空间
+    // 3. 使用 QSplitter 让左右两栏可以拖拽调整大小 (体验更好)
+    QSplitter *splitter = new QSplitter(Qt::Horizontal, this);
+    splitter->addWidget(m_categoryTree);
+    splitter->addWidget(m_pageStack);
+    splitter->setStretchFactor(0, 1); // 左侧占比小
+    splitter->setStretchFactor(1, 3); // 右侧占比大
+    splitter->setChildrenCollapsible(false); // 不允许完全拖拽折叠
 
-    // 底部按钮
-    m_buttonBox = new QDialogButtonBox(
-            QDialogButtonBox::Ok | QDialogButtonBox::Cancel | QDialogButtonBox::Apply, this);
-    connect(m_buttonBox, &QDialogButtonBox::accepted, this, &PreferencesDialog::onAccepted);
+    // 4. 创建底部确定/取消/应用按钮
+    m_buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel
+                                               | QDialogButtonBox::Apply,
+                                       Qt::Horizontal, this);
+
+    // 5. 组装整体布局
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->addWidget(splitter);
+    mainLayout->addWidget(m_buttonBox);
+
+    // 6. 连接信号槽
+    connect(m_categoryTree, &QTreeWidget::currentItemChanged, this,
+            &PreferencesDialog::onPageChanged);
+
+    // OK 按钮触发 accept
+    connect(m_buttonBox, &QDialogButtonBox::accepted, this, &PreferencesDialog::onAccept);
+    // Cancel 按钮触发 reject
     connect(m_buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    connect(m_buttonBox->button(QDialogButtonBox::Apply), &QPushButton::clicked, this,
-            &PreferencesDialog::onApply);
-    outerLayout->addWidget(m_buttonBox);
 
-    // 创建分类和页面
-    createCategories();
-    m_categoryList->setCurrentRow(0);
-    loadSettings();
+    // 处理 Apply 按钮 (需要判断点击的是哪个按钮)
+    connect(m_buttonBox, &QDialogButtonBox::clicked, this, [this](QAbstractButton *button) {
+        if (m_buttonBox->buttonRole(button) == QDialogButtonBox::ApplyRole) {
+            onApply();
+        }
+    });
 }
 
-void PreferencesDialog::createCategories()
+PreferencesDialog::~PreferencesDialog() = default;
+
+void PreferencesDialog::addPage(AbstractPreferencePage *page)
 {
-    // 添加分类（左侧列表项）
-    m_categoryList->addItem(tr("General"));
-    m_categoryList->addItem(tr("Appearance"));
-    m_categoryList->addItem(tr("Advanced"));
+    if (!page)
+        return;
 
-    // 为每个分类创建对应的页面（右侧内容）
-    // 通用设置页
-    QWidget *generalPage = new QWidget(this);
-    QVBoxLayout *generalLayout = new QVBoxLayout(generalPage);
-    generalLayout->addWidget(new QLabel(tr("General settings will be placed here."), generalPage));
-    generalLayout->addStretch();
+    // 1. 添加左侧树节点
+    QTreeWidgetItem *treeItem = new QTreeWidgetItem(m_categoryTree);
+    treeItem->setText(0, page->title());
 
-    // 外观设置页
-    QWidget *appearancePage = new QWidget(this);
-    QVBoxLayout *appearanceLayout = new QVBoxLayout(appearancePage);
-    appearanceLayout->addWidget(
-            new QLabel(tr("Appearance settings will be placed here."), appearancePage));
-    appearanceLayout->addStretch();
+    // 2. 获取页面实际 Widget 并添加到右侧堆栈
+    QWidget *pageWidget = page->widget();
+    m_pageStack->addWidget(pageWidget);
 
-    // 高级设置页
-    QWidget *advancedPage = new QWidget(this);
-    QVBoxLayout *advancedLayout = new QVBoxLayout(advancedPage);
-    advancedLayout->addWidget(
-            new QLabel(tr("Advanced settings will be placed here."), advancedPage));
-    advancedLayout->addStretch();
+    // 3. 建立映射关系
+    m_pageMap[treeItem] = page;
 
-    // 将页面添加到堆叠窗口，顺序与列表顺序一致
-    m_stackedWidget->addWidget(generalPage);
-    m_stackedWidget->addWidget(appearancePage);
-    m_stackedWidget->addWidget(advancedPage);
+    // 4. 如果是添加的第一个页面，默认选中它
+    if (m_categoryTree->topLevelItemCount() == 1) {
+        m_categoryTree->setCurrentItem(treeItem);
+        m_pageStack->setCurrentWidget(pageWidget);
+    }
 }
 
-void PreferencesDialog::onCategoryChanged(int index)
+void PreferencesDialog::onPageChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 {
-    m_stackedWidget->setCurrentIndex(index);
+    Q_UNUSED(previous);
+    if (m_pageMap.contains(current)) {
+        m_pageStack->setCurrentWidget(m_pageMap[current]->widget());
+    }
 }
 
-void PreferencesDialog::loadSettings()
+void PreferencesDialog::showEvent(QShowEvent *event)
 {
-    // 从 QSettings 读取当前值并更新界面控件
-    // 例如：
-    // QSettings settings;
-    // bool check = settings.value("prefs/option", false).toBool();
-    // m_checkBox->setChecked(check);
-    // 此处留空，具体实现时添加控件并读写
-}
+    QDialog::showEvent(event);
 
-void PreferencesDialog::saveSettings()
-{
-    // 将界面控件的当前值写入 QSettings
-    // 例如：
-    // QSettings settings;
-    // settings.setValue("prefs/option", m_checkBox->isChecked());
-}
-
-void PreferencesDialog::onAccepted()
-{
-    saveSettings();
-    accept();
+    // 确保只在第一次显示时加载配置，避免反复弹出对话框时重复加载
+    if (!m_loaded) {
+        for (AbstractPreferencePage *page : m_pageMap) {
+            page->loadSettings();
+        }
+        m_loaded = true;
+    }
 }
 
 void PreferencesDialog::onApply()
 {
-    saveSettings();
+    applyChanges();
+    // Apply 按钮通常不关闭对话框，只保存数据
+}
+
+void PreferencesDialog::onAccept()
+{
+    applyChanges();
+    accept(); // 关闭对话框并返回 QDialog::Accepted
+}
+
+void PreferencesDialog::applyChanges()
+{
+    // 遍历所有已注册的页面，调用其保存逻辑
+    for (AbstractPreferencePage *page : m_pageMap) {
+        page->saveSettings();
+    }
 }
 
 } // namespace hello::app

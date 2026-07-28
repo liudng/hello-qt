@@ -19,6 +19,7 @@
 
 #include "mainwindow.h"
 #include "preferencesdialog.h"
+#include "appearancepreferencepage.h"
 #include "centralwidget.h"
 
 namespace hello::app {
@@ -90,6 +91,14 @@ void MainWindow::createMenuBar()
     preferencesAction->setShortcut(QKeySequence::Preferences);
     connect(preferencesAction, &QAction::triggered, this, [this]() {
         PreferencesDialog dialog(this);
+
+        // 实例化你写好的各个设置页面
+        // 注意：将 &dialog 作为父对象传入，这样当 dialog 销毁时，页面也会自动销毁，防止内存泄漏
+        AppearancePreferencePage *appearancePage = new AppearancePreferencePage(&dialog);
+
+        // 将页面装入通用对话框
+        dialog.addPage(appearancePage);
+
         dialog.exec();
     });
     editMenu->addAction(preferencesAction);

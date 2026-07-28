@@ -22,6 +22,7 @@ qt_add_executable(
     main.cpp
     mainwindow.cpp
     preferencesdialog.cpp
+    appearancepreferencepage.cpp
     centralwidget.cpp
 )
 
