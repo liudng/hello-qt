@@ -15,8 +15,11 @@
 #include <QStatusBar>
 #include <QLabel>
 #include <QProgressBar>
+#include <QContextMenuEvent>
 
 #include "mainwindow.h"
+#include "preferencesdialog.h"
+#include "centralwidget.h"
 
 namespace hello::app {
 
@@ -27,8 +30,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Create the menu bar, toolbars, and status bar
     createMenuBar();
-    createToolBars();
-    createStatusBar();
+
+    // Create a central widget with a vertical layout and a button
+    setCentralWidget(new CentralWidget(this));
 
     // Restore the geometry and state of the main window from QSettings
     bool restoredGeoMetry = restoreGeometry(settings.value("window/geometry").toByteArray());
@@ -39,6 +43,9 @@ MainWindow::MainWindow(QWidget *parent)
         int height = 600;
         resize(width, height);
     }
+
+    // Show a "Ready" message in the status bar for 2 seconds
+    statusBar()->showMessage(tr("Ready"), 2000);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -48,6 +55,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     // Save the geometry and state of the main window to QSettings before closing
     settings.setValue("window/geometry", saveGeometry());
     settings.setValue("window/state", saveState());
+    settings.setValue("view/statusbar", statusBar()->isVisible());
 
     // Call the base class implementation to ensure proper closing behavior
     QMainWindow::closeEvent(event);
@@ -55,13 +63,56 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::createMenuBar()
 {
+    QSettings settings;
+
     // Create the File menu
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-    // Add "Exit" action to the File menu
-    QAction *exitAction = fileMenu->addAction(tr("Exit"));
-    exitAction->setIcon(QIcon::fromTheme("application-exit"));
+    // Create a toolbar for file operations
+    QToolBar *fileToolBar = addToolBar(tr("File"));
+    fileToolBar->setObjectName("FileToolBar");
+
+    // Add "Exit" action to the File menu and toolbar
+    QAction *exitAction = new QAction(QIcon::fromTheme("application-exit"), tr("Exit"), this);
     exitAction->setShortcut(QKeySequence::Quit);
     connect(exitAction, &QAction::triggered, this, &MainWindow::close);
+    fileMenu->addAction(exitAction);
+    fileToolBar->addAction(exitAction);
+
+    // Create the Edit menu
+    QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
+    // Create a toolbar for edit operations
+    QToolBar *editToolBar = addToolBar(tr("Edit"));
+    editToolBar->setObjectName("EditToolBar");
+
+    // Add "Perferences" action to the Edit menu and toolbar
+    QAction *preferencesAction =
+            new QAction(QIcon::fromTheme("preferences-system"), tr("Preferences"), this);
+    preferencesAction->setShortcut(QKeySequence::Preferences);
+    connect(preferencesAction, &QAction::triggered, this, [this]() {
+        PreferencesDialog dialog(this);
+        dialog.exec();
+    });
+    editMenu->addAction(preferencesAction);
+    editToolBar->addAction(preferencesAction);
+
+    // Create the View menu
+    QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
+    // Create a toolbar for view operations
+    QToolBar *viewToolBar = addToolBar(tr("View"));
+    viewToolBar->setObjectName("ViewToolBar");
+
+    // Restore the visibility of the status bar from QSettings
+    bool viewStatusbar = settings.value("view/statusbar", true).toBool();
+    statusBar()->setVisible(viewStatusbar);
+
+    // Add "Status Bar" action to the View menu and toolbar
+    QAction *statusBarAction = new QAction(QIcon::fromTheme("info"), tr("Status Bar"), this);
+    statusBarAction->setCheckable(true);
+    statusBarAction->setChecked(viewStatusbar);
+    connect(statusBarAction, &QAction::triggered, this,
+            [this](bool checked) { statusBar()->setVisible(checked); });
+    viewMenu->addAction(statusBarAction);
+    viewToolBar->addAction(statusBarAction);
 
     // Create the Help menu
     QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
@@ -71,36 +122,11 @@ void MainWindow::createMenuBar()
     connect(aboutAction, &QAction::triggered, this, &MainWindow::about);
 }
 
-void MainWindow::createToolBars()
-{
-    // Create a toolbar for file operations
-    QToolBar *fileToolBar = addToolBar(tr("File"));
-    // Add "Exit" action to the toolbar
-    QAction *exitAction = fileToolBar->addAction(tr("Exit"));
-    exitAction->setIcon(QIcon::fromTheme("application-exit"));
-    exitAction->setShortcut(QKeySequence::Quit);
-    connect(exitAction, &QAction::triggered, this, &MainWindow::close);
-
-    // Create a toolbar for help operations
-    QToolBar *helpToolBar = addToolBar(tr("Help"));
-    // Add "About" action to the toolbar
-    QAction *aboutAction = helpToolBar->addAction(tr("About"));
-    aboutAction->setIcon(QIcon::fromTheme("help-about"));
-    connect(aboutAction, &QAction::triggered, this, &MainWindow::about);
-}
-
-void MainWindow::createStatusBar()
-{
-    statusBar()->showMessage(tr("Ready"), 2000);
-}
-
 void MainWindow::about()
 {
     QMessageBox::about(this, "About",
                        "This is a simple Qt application demonstrating the use of QMainWindow, "
                        "QMenuBar, and QStatusBar.");
 }
-
-void MainWindow::updateStatusBar() { }
 
 } // namespace hello::app

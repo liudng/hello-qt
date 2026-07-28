@@ -21,6 +21,8 @@ qt_add_executable(
     hello
     main.cpp
     mainwindow.cpp
+    preferencesdialog.cpp
+    centralwidget.cpp
 )
 
 target_link_libraries(hello PRIVATE

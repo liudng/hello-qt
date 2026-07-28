@@ -18,7 +18,32 @@
 
 ### QAction
 
-### Settings.ini
+### QSettings
+
+### QMenuBar
+
+```c++
+    // Create the File menu
+    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+    // Add "Exit" action to the File menu
+    QAction *exitAction = fileMenu->addAction(tr("Exit"));
+    exitAction->setIcon(QIcon::fromTheme("application-exit"));
+    exitAction->setShortcut(QKeySequence::Quit);
+    connect(exitAction, &QAction::triggered, this, &MainWindow::close);
+```
+
+```c++
+    QSettings settings;
+    // Create the View menu
+    QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
+    // Add "Show Status Bar" action to the View menu
+    QAction *showStatusBarAction = viewMenu->addAction(tr("Show Status Bar"));
+    showStatusBarAction->setCheckable(true);
+    showStatusBarAction->setChecked(true);
+    connect(showStatusBarAction, &QAction::triggered, this,
+            [this](bool checked) { statusBar()->setVisible(checked); });
+```
+
 
 ## CMake
 

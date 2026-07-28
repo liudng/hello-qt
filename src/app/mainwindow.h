@@ -20,12 +20,9 @@ protected:
 
 private:
     void createMenuBar();
-    void createToolBars();
-    void createStatusBar();
 
 private slots:
     void about();
-    void updateStatusBar();
 };
 
 } // namespace hello
