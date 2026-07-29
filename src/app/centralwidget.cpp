@@ -11,7 +11,7 @@ namespace hello::app {
 CentralWidget::CentralWidget(QWidget *parent) : QWidget(parent)
 {
     QVBoxLayout *layout = new QVBoxLayout(this);
-    QLabel *label = new QLabel("Hello, World!", this);
+    QLabel *label = new QLabel(tr("Hello, World!"), this);
     label->setAlignment(Qt::AlignCenter);
     label->setStyleSheet("font-size: 20px; color: green;");
     layout->addWidget(label);

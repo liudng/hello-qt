@@ -133,9 +133,9 @@ void MainWindow::createMenuBar()
 
 void MainWindow::about()
 {
-    QMessageBox::about(this, "About",
-                       "This is a simple Qt application demonstrating the use of QMainWindow, "
-                       "QMenuBar, and QStatusBar.");
+    QMessageBox::about(this, tr("About"),
+                       tr("This is a simple Qt application demonstrating the use of QMainWindow, "
+                          "QMenuBar, and QStatusBar."));
 }
 
 } // namespace hello::app
