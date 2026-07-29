@@ -8,6 +8,10 @@
 #include <QStandardPaths>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
+#include <QTranslator>
+#include <QLocale>
+#include <QDebug>
+
 #include "config.h"
 #include "mainwindow.h"
 
@@ -34,6 +38,17 @@ int main(int argc, char *argv[])
 
     // Create the QApplication object
     QApplication app(argc, argv);
+
+    // Load translations based on system locale
+    QTranslator translator;
+    const QStringList uiLanguages = QLocale::system().uiLanguages();
+    qDebug() << "UI Languages:" << uiLanguages;
+    if (translator.load(QLocale::system(), "hello", "_", ":/i18n")) {
+        qDebug() << "Translation loaded successfully";
+        app.installTranslator(&translator);
+    } else {
+        qDebug() << "Failed to load translation";
+    }
 
     // Set up command line parser to handle options
     QCommandLineParser parser;

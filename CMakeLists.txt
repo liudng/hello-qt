@@ -23,8 +23,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS 
-Svg
-Widgets 
+    Svg
+    Widgets 
+    LinguistTools
 )
 
 qt_standard_project_setup(
@@ -36,3 +37,5 @@ qt_standard_project_setup(
 add_subdirectory(src/app)
 add_subdirectory(src/core)
 add_subdirectory(tests/unit)
+
+qt_add_translations(TARGETS hello TS_FILE_DIR i18n RESOURCE_PREFIX /i18n NO_GENERATE_PLURALS_TS_FILE)
