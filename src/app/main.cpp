@@ -10,6 +10,7 @@
 #include <QCommandLineOption>
 #include <QTranslator>
 #include <QLocale>
+#include <QSettings>
 #include <QDebug>
 
 #include "config.h"
@@ -39,15 +40,34 @@ int main(int argc, char *argv[])
     // Create the QApplication object
     QApplication app(argc, argv);
 
-    // Load translations based on system locale
+    // Load translations based on saved preference or system locale
     QTranslator translator;
-    const QStringList uiLanguages = QLocale::system().uiLanguages();
-    qDebug() << "UI Languages:" << uiLanguages;
-    if (translator.load(QLocale::system(), "hello", "_", ":/i18n")) {
-        qDebug() << "Translation loaded successfully";
-        app.installTranslator(&translator);
-    } else {
-        qDebug() << "Failed to load translation";
+    QSettings settings;
+    QString savedLang = settings.value("appearance/language", "").toString();
+    bool translatorLoaded = false;
+    
+    if (!savedLang.isEmpty()) {
+        // Use saved language preference
+        qDebug() << "Using saved language:" << savedLang;
+        if (translator.load(QLocale(savedLang), "hello", "_", ":/i18n")) {
+            qDebug() << "Translation loaded successfully from saved preference";
+            app.installTranslator(&translator);
+            translatorLoaded = true;
+        } else {
+            qDebug() << "Failed to load translation for saved language, falling back to system locale";
+        }
+    }
+    
+    // If no saved language or saved language failed, try system locale
+    if (!translatorLoaded) {
+        const QStringList uiLanguages = QLocale::system().uiLanguages();
+        qDebug() << "UI Languages:" << uiLanguages;
+        if (translator.load(QLocale::system(), "hello", "_", ":/i18n")) {
+            qDebug() << "Translation loaded successfully from system locale";
+            app.installTranslator(&translator);
+        } else {
+            qDebug() << "Failed to load translation";
+        }
     }
 
     // Set up command line parser to handle options

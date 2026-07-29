@@ -5,6 +5,7 @@
 
 #include <QWidget>
 #include <QComboBox>
+#include <QTranslator>
 
 #include "abstractpreferencepage.h"
 
@@ -22,10 +23,13 @@ public:
 
 private:
     QStringList getAvailableIconThemes() const;
+    QStringList getAvailableLanguages() const;
+    void applyLanguage(const QString &langCode);
     // 控件指针
     QComboBox *m_languageCombo;
     QComboBox *m_styleCombo;
     QComboBox *m_iconThemeCombo;
+    QTranslator *m_translator = nullptr;
 };
 
 } // namespace hello::app

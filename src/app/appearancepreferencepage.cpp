@@ -14,6 +14,7 @@
 #include <QDirIterator>
 #include <QStandardPaths>
 #include <QSet>
+#include <QLocale>
 
 #include "appearancepreferencepage.h"
 
@@ -38,10 +39,17 @@ AppearancePreferencePage::AppearancePreferencePage(QWidget *parent) : QWidget(pa
 
     // 界面语言
     m_languageCombo = new QComboBox(this);
-    // 这里硬编码演示，实际项目可从 i18n 目录动态扫描 .qm 文件
     m_languageCombo->addItem(tr("System Default"), ""); // 显示文本, 实际保存的数据
-    m_languageCombo->addItem(tr("Simplified Chinese"), "zh_CN");
-    m_languageCombo->addItem(tr("English"), "en");
+    // 动态获取可用的翻译语言
+    QStringList availableLanguages = getAvailableLanguages();
+    for (const QString &langCode : availableLanguages) {
+        QString langName = QLocale(langCode).nativeLanguageName();
+        // Capitalize the first letter for better display
+        if (!langName.isEmpty()) {
+            langName[0] = langName[0].toUpper();
+        }
+        m_languageCombo->addItem(langName, langCode);
+    }
     formLayout->addRow(tr("Language:"), m_languageCombo);
 
     // 应用样式
@@ -69,6 +77,58 @@ AppearancePreferencePage::AppearancePreferencePage(QWidget *parent) : QWidget(pa
 
     mainLayout->addWidget(appearanceGroup);
     mainLayout->addStretch(1); // 底部弹簧，保持控件顶部对齐
+}
+
+/**
+ * @brief 应用指定的语言翻译
+ *
+ * @param langCode 语言代码，如 "zh_CN" 或空字符串表示系统默认
+ */
+void AppearancePreferencePage::applyLanguage(const QString &langCode)
+{
+    // 移除旧的翻译器
+    if (m_translator) {
+        qApp->removeTranslator(m_translator);
+        delete m_translator;
+        m_translator = nullptr;
+    }
+    
+    // 如果不是系统默认，加载新翻译
+    if (!langCode.isEmpty()) {
+        m_translator = new QTranslator(this);
+        if (m_translator->load(QLocale(langCode), "hello", "_", ":/i18n")) {
+            qApp->installTranslator(m_translator);
+        } else {
+            delete m_translator;
+            m_translator = nullptr;
+        }
+    }
+}
+
+/**
+ * @brief 从 Qt 资源系统获取可用的翻译语言列表
+ *
+ * 扫描 :/i18n 目录下的 .qm 翻译文件，提取语言代码
+ * 这些文件由 CMake 的 qt_add_translations 自动生成
+ */
+QStringList AppearancePreferencePage::getAvailableLanguages() const
+{
+    QStringList languages;
+    QDir i18nDir(":/i18n");
+    if (i18nDir.exists()) {
+        QStringList filters;
+        filters << "*.qm";
+        QFileInfoList files = i18nDir.entryInfoList(filters, QDir::Files);
+        for (const QFileInfo &file : files) {
+            // 文件名格式: hello_zh_CN.qm, 提取语言代码 zh_CN
+            QString fileName = file.baseName(); // 去掉扩展名
+            if (fileName.startsWith("hello_")) {
+                QString langCode = fileName.mid(6); // 去掉 "hello_" 前缀
+                languages << langCode;
+            }
+        }
+    }
+    return languages;
 }
 
 /**
@@ -173,7 +233,12 @@ void AppearancePreferencePage::saveSettings()
     QSettings settings;
 
     // 保存配置。使用 currentData() 保存内部数据，而不是显示的文本
-    settings.setValue("appearance/language", m_languageCombo->currentData().toString());
+    QString langCode = m_languageCombo->currentData().toString();
+    settings.setValue("appearance/language", langCode);
+    
+    // 立即应用语言更改
+    applyLanguage(langCode);
+    
     QString styleName = m_styleCombo->currentData().toString();
     settings.setValue("appearance/style", styleName);
 
